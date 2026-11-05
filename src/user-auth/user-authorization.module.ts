@@ -20,6 +20,8 @@ import { UserBlockedJwtStrategy } from './strategy/user-blocked-jwt.strategy';
 import { OptionalUserJwtStrategy } from './strategy/optional-user-jwt.strategy';
 import { NotificationModule } from 'src/notification/notification.module';
 import { WorkspaceModule } from 'src/workspace/workspace.module';
+import { PasswordlessAuthService } from './passwordless/passwordless-auth.service';
+import { PasswordlessAuthController } from './passwordless/passwordless-auth.controller';
 
 @Module({
   imports: [
@@ -37,10 +39,15 @@ import { WorkspaceModule } from 'src/workspace/workspace.module';
     NotificationModule,
     WorkspaceModule,
   ],
-  controllers: [ValidatorController, AuthUserController],
+  controllers: [
+    ValidatorController,
+    AuthUserController,
+    PasswordlessAuthController,
+  ],
   providers: [
     UserAuthService,
     AuthService,
+    PasswordlessAuthService,
     UserJwtStrategy,
     UserBlockedJwtStrategy,
     OptionalUserJwtStrategy,
