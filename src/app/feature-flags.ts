@@ -35,6 +35,15 @@ export const FeatureFlags = {
   get billingEnabled(): boolean {
     return parseBool(process.env.BILLING_ENABLED, false);
   },
+
+  /**
+   * When true, employer contact (inviteHr / contact reveal) is gated on two-sided
+   * versioned worker consent (spec FR-015/016). Default: false until the consent
+   * flow (app authorize UI + e2e) is wired, so the existing swap flow is unchanged.
+   */
+  get consentGateEnabled(): boolean {
+    return parseBool(process.env.CONSENT_GATE_ENABLED, false);
+  },
 } as const;
 
 /** Convenience guard used on hot paths to block fabrication when not in demo mode. */
