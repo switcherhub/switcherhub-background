@@ -26,6 +26,7 @@ import { ResumeUpdateDto } from '../dto/resume-update.dto';
 import { UserResumeList } from 'src/users/interfaces/user-resume-list.type';
 import { OptionalJwtUserAuthGuard } from 'src/user-auth/guards/optional-jwt-user-auth.guard';
 import { ResumeMockService } from '../services/resume-mock.service';
+import { assertNotFabricatingInProd } from '../../app/feature-flags';
 
 @Controller('resume')
 export class ResumeController {
@@ -178,6 +179,8 @@ export class ResumeController {
   @Post('mock')
   @UseGuards(JwtUserAuthGuard)
   async createMock(@GetUser() user: UserInterface): Promise<ResumeInterface> {
+    // Truthful Data: fabricated resumes are blocked unless DEMO_MODE is on.
+    assertNotFabricatingInProd('resume.createMock');
     const mockResume = await this.resumeMockService.generateMockResume();
     return this.resumeUserService.createByUser(mockResume, user.id);
   }

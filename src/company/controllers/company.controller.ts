@@ -23,6 +23,7 @@ import { CompanyUserService } from '../services/company-user.service';
 import { CompanyUpdateDto } from '../dto/company-update.dto';
 import { OptionalJwtUserAuthGuard } from 'src/user-auth/guards/optional-jwt-user-auth.guard';
 import { CompanyMockService } from '../services/company-mock.service';
+import { assertNotFabricatingInProd } from '../../app/feature-flags';
 
 @Controller('company')
 export class CompanyController {
@@ -75,6 +76,7 @@ export class CompanyController {
   @Post('mock')
   @UseGuards(JwtUserAuthGuard)
   async createMcok(@GetUser() user: UserInterface): Promise<CompanyInterface> {
+    assertNotFabricatingInProd('company.createMock');
     const company = await this.companyMockService.generateMockResume();
 
     return this.companyUserService.createByUser(company, user.id);

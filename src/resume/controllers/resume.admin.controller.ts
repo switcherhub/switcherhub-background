@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ResumeMockService } from '../services/resume-mock.service';
+import { assertNotFabricatingInProd } from '../../app/feature-flags';
 import { ApiKeyGuard } from 'src/app/guards/api-key.guard';
 import { ResumeInterface } from '../types/resume.interface';
 import { FilterResponseInterface } from 'src/utils/filter-response.interface';
@@ -44,6 +45,7 @@ export class ResumeAdminController {
   @Post('generate')
   @UseGuards(ApiKeyGuard)
   async generateMockResumes(@Body('count') count: number) {
+    assertNotFabricatingInProd('resume.generateMockResumes');
     return await this.resumeMockService.generateMockResumes(count);
   }
 

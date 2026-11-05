@@ -14,6 +14,7 @@ import { JobCoreModule } from './job-core/job-core.module';
 import { RolesModule } from './roles/roles.module';
 import { ConsentModule } from './consent/consent.module';
 import { IdempotencyModule } from './app/idempotency/idempotency.module';
+import { CommuteModule } from './commute/commute.module';
 import { WorkEnvironmentModule } from './work-environment/work-environment.module';
 import { ShiftTypeModule } from './shift-type/shift-type.module';
 import { LocationTenureModule } from './location-tenure/location-tenure.module';
@@ -73,6 +74,7 @@ import { WorkspaceModule } from './workspace/workspace.module';
     RolesModule,
     ConsentModule,
     IdempotencyModule,
+    CommuteModule,
     WorkEnvironmentModule,
     ShiftTypeModule,
     LocationTenureModule,

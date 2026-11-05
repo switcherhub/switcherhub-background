@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CompanyMockService } from '../services/company-mock.service';
+import { assertNotFabricatingInProd } from '../../app/feature-flags';
 import { ApiKeyGuard } from 'src/app/guards/api-key.guard';
 import { CompanyInterface } from '../types/company.interface';
 import { FilterResponseInterface } from 'src/utils/filter-response.interface';
@@ -44,6 +45,7 @@ export class CompanyAdminController {
   @Post('generate')
   @UseGuards(ApiKeyGuard)
   async generateMockResumes(@Body('count') count: number) {
+    assertNotFabricatingInProd('company.generateMockResumes');
     return await this.resumeMockService.generateMockResumes(count);
   }
 
