@@ -1,0 +1,296 @@
+{
+  "info": {
+    "name": "Organization API",
+    "description": "API для організацій: створення, запрошення, ролі, передача власності, видалення учасників.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT токен користувача (Bearer)"
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID організації"
+    },
+    {
+      "key": "member_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID учасника (workspace_member id)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Get Organizations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/organization",
+          "host": ["{{base_url}}"],
+          "path": ["organization"]
+        },
+        "description": "Список організацій поточного користувача."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Organization by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/organization/{{organization_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["organization", "{{organization_id}}"]
+        },
+        "description": "Деталі організації (учасники, owner). Потрібен доступ до організації."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Organization",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"My Company\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/organization",
+          "host": ["{{base_url}}"],
+          "path": ["organization"]
+        },
+        "description": "Створити організацію. Користувач стає owner."
+      },
+      "response": []
+    },
+    {
+      "name": "Accept Invitation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"invitation_code_from_email\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/organization/invitation/accept",
+          "host": ["{{base_url}}"],
+          "path": ["organization", "invitation", "accept"]
+        },
+        "description": "Прийняти запрошення в організацію за кодом (email має співпадати з акаунтом)."
+      },
+      "response": []
+    },
+    {
+      "name": "Invite User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"colleague@example.com\",\n  \"role\": \"admin\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/organization/{{organization_id}}/invite",
+          "host": ["{{base_url}}"],
+          "path": ["organization", "{{organization_id}}", "invite"]
+        },
+        "description": "Запросити користувача в організацію. Ролі: admin, hr, viewer (owner не можна запросити — тільки передача власності). Потрібне право MANAGE_TEAM_USERS."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Member Role",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"hr\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/organization/{{organization_id}}/members/{{member_id}}/role",
+          "host": ["{{base_url}}"],
+          "path": [
+            "organization",
+            "{{organization_id}}",
+            "members",
+            "{{member_id}}",
+            "role"
+          ]
+        },
+        "description": "Змінити роль учасника. Ролі: admin, hr, viewer. Потрібне право ASSIGN_ROLES. Роль owner змінити неможливо — тільки через transfer-ownership."
+      },
+      "response": []
+    },
+    {
+      "name": "Transfer Ownership",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newOwnerMemberId\": \"{{member_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/organization/{{organization_id}}/transfer-ownership",
+          "host": ["{{base_url}}"],
+          "path": ["organization", "{{organization_id}}", "transfer-ownership"]
+        },
+        "description": "Передати власність організації іншому учаснику. Тільки поточний owner. Після передачі стає viewer."
+      },
+      "response": []
+    },
+    {
+      "name": "Remove Member",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/organization/{{organization_id}}/members/{{member_id}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "organization",
+            "{{organization_id}}",
+            "members",
+            "{{member_id}}"
+          ]
+        },
+        "description": "Видалити учасника з організації. Потрібне право MANAGE_TEAM_USERS. Owner видалити неможливо — спочатку передати власність."
+      },
+      "response": []
+    },
+    {
+      "name": "Leave Organization",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/organization/{{organization_id}}/leave",
+          "host": ["{{base_url}}"],
+          "path": ["organization", "{{organization_id}}", "leave"]
+        },
+        "description": "Покинути організацію. Owner не може вийти — спочатку передати власність."
+      },
+      "response": []
+    }
+  ]
+}

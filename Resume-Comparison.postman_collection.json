@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "Resume Comparison API",
+    "description": "API endpoints for resume comparison functionality. Calculates comparison scores between resumes based on location, salary, job core, and various parameters.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from user authentication"
+    },
+    {
+      "key": "resume_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID of the resume to compare"
+    }
+  ],
+  "item": [
+    {
+      "name": "Calculate Resume Comparison",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=10",
+          "host": ["{{base_url}}"],
+          "path": ["resume-comparison", ":resumeId", "calculate"],
+          "query": [
+            {
+              "key": "radius",
+              "value": "10",
+              "description": "Search radius in kilometers"
+            }
+          ],
+          "variable": [
+            {
+              "key": "resumeId",
+              "value": "{{resume_id}}",
+              "description": "UUID of the resume to compare"
+            }
+          ]
+        },
+        "description": "Calculate comparison for a resume with others in specified radius.\n\n**Filters applied:**\n- Same jobCore\n- Salary difference within 10%\n- Distance win: 10% better\n- Duration win: 10 minutes better\n\n**Returns:** Array of comparison results with:\n- Distance and duration data (AToB and BToA)\n- Individual scores (Environment, Tenure, Team, Training, License, Shift, Salary, Job Type)\n- Total score (average of all scores)\n- Filter flags"
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=10",
+              "host": ["{{base_url}}"],
+              "path": ["resume-comparison", ":resumeId", "calculate"],
+              "query": [
+                {
+                  "key": "radius",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "[\n  {\n    \"id\": \"uuid-here\",\n    \"resumeAId\": \"main-resume-uuid\",\n    \"resumeBId\": \"compared-resume-uuid\",\n    \"distanceAToB\": 15.5,\n    \"distanceBToA\": 18.2,\n    \"durationAToB\": 1200,\n    \"durationBToA\": 1450,\n    \"scores\": {\n      \"environment\": 0.8,\n      \"tenure\": 1.0,\n      \"team\": 0.6,\n      \"training\": 0.9,\n      \"license\": 1.0,\n      \"shift\": 0.7,\n      \"salary\": 1.0,\n      \"jobType\": 1.0\n    },\n    \"totalScore\": 0.875,\n    \"passedSalaryFilter\": true,\n    \"passedJobCoreFilter\": true,\n    \"passedDistanceFilter\": true,\n    \"passedDurationFilter\": true,\n    \"passedAllFilters\": true,\n    \"createdAt\": \"2024-01-15T10:30:00.000Z\"\n  }\n]"
+        },
+        {
+          "name": "No Results",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=10",
+              "host": ["{{base_url}}"],
+              "path": ["resume-comparison", ":resumeId", "calculate"],
+              "query": [
+                {
+                  "key": "radius",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "[]"
+        },
+        {
+          "name": "Resume Not Found",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=10",
+              "host": ["{{base_url}}"],
+              "path": ["resume-comparison", ":resumeId", "calculate"],
+              "query": [
+                {
+                  "key": "radius",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 404,\n  \"message\": \"Resume with id {resumeId} not found\",\n  \"error\": \"Not Found\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Calculate Resume Comparison - Small Radius (5km)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=5",
+          "host": ["{{base_url}}"],
+          "path": ["resume-comparison", ":resumeId", "calculate"],
+          "query": [
+            {
+              "key": "radius",
+              "value": "5",
+              "description": "Small radius for nearby comparisons"
+            }
+          ],
+          "variable": [
+            {
+              "key": "resumeId",
+              "value": "{{resume_id}}"
+            }
+          ]
+        },
+        "description": "Calculate comparison with a small radius (5km) for nearby resumes only."
+      },
+      "response": []
+    },
+    {
+      "name": "Calculate Resume Comparison - Medium Radius (25km)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=25",
+          "host": ["{{base_url}}"],
+          "path": ["resume-comparison", ":resumeId", "calculate"],
+          "query": [
+            {
+              "key": "radius",
+              "value": "25",
+              "description": "Medium radius for regional comparisons"
+            }
+          ],
+          "variable": [
+            {
+              "key": "resumeId",
+              "value": "{{resume_id}}"
+            }
+          ]
+        },
+        "description": "Calculate comparison with a medium radius (25km) for regional comparisons."
+      },
+      "response": []
+    },
+    {
+      "name": "Calculate Resume Comparison - Large Radius (50km)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/resume-comparison/:resumeId/calculate?radius=50",
+          "host": ["{{base_url}}"],
+          "path": ["resume-comparison", ":resumeId", "calculate"],
+          "query": [
+            {
+              "key": "radius",
+              "value": "50",
+              "description": "Large radius for extended area comparisons"
+            }
+          ],
+          "variable": [
+            {
+              "key": "resumeId",
+              "value": "{{resume_id}}"
+            }
+          ]
+        },
+        "description": "Calculate comparison with a large radius (50km) for extended area comparisons."
+      },
+      "response": []
+    }
+  ]
+}

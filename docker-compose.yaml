@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: always
+    env_file: ./.env
+    ports:
+      - "5432:5432"
+    command: >
+      postgres
+      -c max_parallel_workers=8
+      -c max_parallel_workers_per_gather=4
+      -c parallel_setup_cost=100
+      -c parallel_tuple_cost=0.01
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./db:/var/lib/postgresql/pgdata
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - ${ADMINER_PORT}:8080
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      - --save
+      - "10"
+      - "1"
+      - --save
+      - "60"
+      - "100"
+      - --dir
+      - /data
+      - --dbfilename
+      - dump.rdb
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --loglevel
+      - warning
+      - --stop-writes-on-bgsave-error
+      - "no"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+volumes:
+  redis-data:

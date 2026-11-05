@@ -1,0 +1,112 @@
+name: Deploy
+
+on:
+  push:
+    branches: [map-score]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-map-score
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy map-score
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        id: deploy
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+          command_timeout: 30m
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            bash -lic "
+              set -euo pipefail
+              cd '${{ secrets.DEPLOY_PATH }}'
+              npm run build
+              pm2 restart 0
+            "
+
+      - name: Notify Telegram (success)
+        if: success()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_DEPLOY_CHAT_ID }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not set, skipping notification"
+            exit 0
+          fi
+
+          COMMIT_SHA="${GITHUB_SHA::7}"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TRIGGER="вручну (Actions)"
+          else
+            TRIGGER="push у map-score"
+          fi
+
+          if [ -n "$COMMIT_MSG" ]; then
+            COMMIT_LINE="Повідомлення: $(printf '%s' "$COMMIT_MSG" | head -1 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+          else
+            COMMIT_LINE=""
+          fi
+
+          TEXT=$(printf '%s\n' \
+            "✅ <b>SwitcherHub Backend</b> — деплой успішний" \
+            "" \
+            "Тригер: ${TRIGGER}" \
+            "Коміт: <code>${COMMIT_SHA}</code>" \
+            "${COMMIT_LINE}" \
+            "<a href=\"${RUN_URL}\">Деталі в Actions</a>")
+
+          jq -n \
+            --arg chat_id "$TELEGRAM_CHAT_ID" \
+            --arg text "$TEXT" \
+            '{chat_id: $chat_id, text: $text, parse_mode: "HTML", disable_web_page_preview: true}' \
+            | curl -fsS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" \
+              -d @-
+
+      - name: Notify Telegram (failure)
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_DEPLOY_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not set, skipping notification"
+            exit 0
+          fi
+
+          COMMIT_SHA="${GITHUB_SHA::7}"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TRIGGER="вручну (Actions)"
+          else
+            TRIGGER="push у map-score"
+          fi
+
+          TEXT=$(printf '%s\n' \
+            "❌ <b>SwitcherHub Backend</b> — деплой не вдався" \
+            "" \
+            "Тригер: ${TRIGGER}" \
+            "Коміт: <code>${COMMIT_SHA}</code>" \
+            "<a href=\"${RUN_URL}\">Логи в Actions</a>")
+
+          jq -n \
+            --arg chat_id "$TELEGRAM_CHAT_ID" \
+            --arg text "$TEXT" \
+            '{chat_id: $chat_id, text: $text, parse_mode: "HTML", disable_web_page_preview: true}' \
+            | curl -fsS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" \
+              -d @-

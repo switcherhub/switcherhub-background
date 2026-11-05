@@ -1,0 +1,351 @@
+{
+  "info": {
+    "name": "Swap Request API",
+    "description": "API endpoints for swap request functionality. Allows switchers to create swap requests, confirm participation, invite HR managers, process payments, and manage swap requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from user authentication"
+    },
+    {
+      "key": "swap_request_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID of the swap request"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Swap Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resumeAId\": \"00000000-0000-0000-0000-000000000001\",\n  \"resumeBId\": \"00000000-0000-0000-0000-000000000002\",\n  \"managerAId\": \"00000000-0000-0000-0000-000000000003\",\n  \"managerBId\": \"00000000-0000-0000-0000-000000000004\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/swap-request",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request"]
+        },
+        "description": "Create a new swap request. Automatically creates a chat between the two switchers."
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Swap Requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/swap-request",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request"]
+        },
+        "description": "Get all swap requests for the authenticated user. Returns requests with status (new, active, success, failed) and step (1-4)."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Swap Request by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/swap-request/:id",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{swap_request_id}}",
+              "description": "Swap request UUID"
+            }
+          ]
+        },
+        "description": "Get a specific swap request by ID with status and step fields."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Swap Request Chat",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/swap-request/:id/chat",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", ":id", "chat"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{swap_request_id}}",
+              "description": "Swap request UUID"
+            }
+          ]
+        },
+        "description": "Get the chat associated with a swap request. Only available to managerA and managerB."
+      },
+      "response": []
+    },
+    {
+      "name": "Confirm Participant",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"John Doe\",\n  \"phone\": \"+1234567890\",\n  \"personalEmail\": \"john.doe@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/swap-request/:id/confirm-participant",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", ":id", "confirm-participant"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{swap_request_id}}",
+              "description": "Swap request UUID"
+            }
+          ]
+        },
+        "description": "Confirm participation in a swap request. Participant A or B can confirm with their personal details."
+      },
+      "response": []
+    },
+    {
+      "name": "Invite HR",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"hr@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/swap-request/:id/invite-hr",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", ":id", "invite-hr"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{swap_request_id}}",
+              "description": "Swap request UUID"
+            }
+          ]
+        },
+        "description": "Invite HR manager to join the swap request. Can be called by managerA or managerB. Email is optional - code will always be generated."
+      },
+      "response": []
+    },
+    {
+      "name": "HR Join by Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"123456\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/swap-request/hr/join",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", "hr", "join"]
+        },
+        "description": "HR manager joins the swap request using the invitation code."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Payment Intent",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/swap-request/:id/payment-intent",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", ":id", "payment-intent"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{swap_request_id}}",
+              "description": "Swap request UUID"
+            }
+          ]
+        },
+        "description": "Create a Stripe payment intent for the swap request. Can be called by managerA or managerB after both HRs have joined."
+      },
+      "response": []
+    },
+    {
+      "name": "Cancel Swap Request",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text",
+            "description": "JWT authentication token"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/swap-request/:id",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{swap_request_id}}",
+              "description": "Swap request UUID"
+            }
+          ]
+        },
+        "description": "Cancel a swap request. Before HR joins, can be cancelled by switchers. After HR joins, only HR can cancel."
+      },
+      "response": []
+    },
+    {
+      "name": "Stripe Webhook",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "stripe-signature",
+            "value": "",
+            "type": "text",
+            "description": "Stripe webhook signature"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"evt_1234567890\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_1234567890\",\n      \"metadata\": {\n        \"swapRequestId\": \"{{swap_request_id}}\",\n        \"side\": \"A\"\n      }\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/swap-request/webhook/stripe",
+          "host": ["{{base_url}}"],
+          "path": ["swap-request", "webhook", "stripe"]
+        },
+        "description": "Stripe webhook endpoint for payment events. Requires raw body and stripe-signature header."
+      },
+      "response": []
+    }
+  ]
+}
