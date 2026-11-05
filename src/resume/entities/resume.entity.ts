@@ -66,6 +66,28 @@ export class ResumeEntity
   @Column()
   jobCoreId: string;
 
+  // ── New taxonomy fields (spec §3; value-first rework). Nullable for back-compat;
+  // populated by onboarding v2 and the migration. categoryKey is DERIVED from roleKey.
+  /** Canonical role_id from the roles taxonomy (null until migrated / set by v2 onboarding). */
+  @Column({ nullable: true })
+  roleKey: string | null;
+
+  /** Derived top-level category key; never asked on the main path. */
+  @Column({ nullable: true })
+  categoryKey: string | null;
+
+  /** Role specialization / disambiguation answer (spec §3.2.5). */
+  @Column({ nullable: true })
+  roleVariant: string | null;
+
+  /** Taxonomy version this role was selected under. */
+  @Column({ nullable: true })
+  taxonomyVersion: string | null;
+
+  /** Free-text / ambiguous role awaiting normalization; NOT matchable while true. */
+  @Column({ default: false })
+  rolePendingReview: boolean;
+
   @ManyToOne(() => JobTypeEntity)
   @JoinColumn({ name: 'jobTypeId' })
   jobType: JobTypeInterface | null;

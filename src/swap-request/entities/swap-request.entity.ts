@@ -26,6 +26,13 @@ export class SwapRequestEntity implements SwapRequestInterface {
   @Column({ type: 'int', nullable: true, unique: true })
   numericId: number | null;
 
+  /**
+   * Current proposal version (spec §8.1). Incremented when key terms change;
+   * worker consents and HR approvals are bound to a specific version. Starts at 1.
+   */
+  @Column({ type: 'int', default: 1 })
+  proposalVersion: number;
+
   @ManyToOne(() => ResumeEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'resumeAId' })
   resumeA: ResumeEntity;

@@ -11,6 +11,9 @@ import { WorkExpirianceModule } from './work-expiriance/work-expiriance.module';
 import { EducationModule } from './education/education.module';
 import { CompanyTypeModule } from './company-type/company-type.module';
 import { JobCoreModule } from './job-core/job-core.module';
+import { RolesModule } from './roles/roles.module';
+import { ConsentModule } from './consent/consent.module';
+import { IdempotencyModule } from './app/idempotency/idempotency.module';
 import { WorkEnvironmentModule } from './work-environment/work-environment.module';
 import { ShiftTypeModule } from './shift-type/shift-type.module';
 import { LocationTenureModule } from './location-tenure/location-tenure.module';
@@ -67,6 +70,9 @@ import { WorkspaceModule } from './workspace/workspace.module';
     CompanyTypeModule,
     EmployeeNumberModule,
     JobCoreModule,
+    RolesModule,
+    ConsentModule,
+    IdempotencyModule,
     WorkEnvironmentModule,
     ShiftTypeModule,
     LocationTenureModule,
