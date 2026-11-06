@@ -46,6 +46,15 @@ export const FeatureFlags = {
   get consentGateEnabled(): boolean {
     return parseBool(process.env.CONSENT_GATE_ENABLED, false);
   },
+
+  /**
+   * When true, the verified-matching v2 engine (hard rules + OSRM routing) is
+   * exposed. Default off until validated against real data; the legacy soft-score
+   * path stays in place meanwhile.
+   */
+  get matchingV2Enabled(): boolean {
+    return parseBool(process.env.MATCHING_V2_ENABLED, false);
+  },
 } as const;
 
 /** Convenience guard used on hot paths to block fabrication when not in demo mode. */

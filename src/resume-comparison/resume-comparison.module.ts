@@ -7,6 +7,8 @@ import { ResumeEntity } from 'src/resume/entities/resume.entity';
 import { SwapRequestEntity } from 'src/swap-request/entities/swap-request.entity';
 import { ConfigurationModule } from 'src/configuration/configuration.module';
 import { RoutingMatrixModule } from 'src/routing-matrix/routing-matrix.module';
+import { MatchingV2Service } from './matching-v2/matching-v2.service';
+import { MatchingV2Controller } from './matching-v2/matching-v2.controller';
 
 @Module({
   imports: [
@@ -14,9 +16,9 @@ import { RoutingMatrixModule } from 'src/routing-matrix/routing-matrix.module';
     ConfigurationModule,
     RoutingMatrixModule,
   ],
-  controllers: [ResumeComparisonController],
-  providers: [ResumeComparisonService],
-  exports: [ResumeComparisonService],
+  controllers: [ResumeComparisonController, MatchingV2Controller],
+  providers: [ResumeComparisonService, MatchingV2Service],
+  exports: [ResumeComparisonService, MatchingV2Service],
 })
 export class ResumeComparisonModule {}
 

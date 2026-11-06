@@ -88,6 +88,24 @@ export class ResumeEntity
   @Column({ default: false })
   rolePendingReview: boolean;
 
+  // ── Swap-terms (spec §5 S05): the worker's MINIMUM acceptable conditions, kept
+  // separate from current values. Null until collected → matching treats as unknown.
+  /** Minimum acceptable guaranteed pay (USD/hour). */
+  @Column({ type: 'float', nullable: true })
+  minRate: number | null;
+
+  /** Minimum acceptable weekly hours. */
+  @Column({ type: 'float', nullable: true })
+  minHours: number | null;
+
+  /** Shifts the worker is available for (normalized, e.g. ['day','evening']). */
+  @Column({ type: 'text', array: true, default: '{}' })
+  availabilityShifts: string[];
+
+  /** Explicit opt-in to change full-time/part-time in a swap. */
+  @Column({ default: false })
+  allowJobTypeChange: boolean;
+
   @ManyToOne(() => JobTypeEntity)
   @JoinColumn({ name: 'jobTypeId' })
   jobType: JobTypeInterface | null;
