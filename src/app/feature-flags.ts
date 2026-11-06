@@ -11,6 +11,8 @@
  * callers never compare raw strings.
  */
 
+import { ForbiddenException } from '@nestjs/common';
+
 function parseBool(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value === null || value.trim() === '') {
     return defaultValue;
@@ -49,7 +51,7 @@ export const FeatureFlags = {
 /** Convenience guard used on hot paths to block fabrication when not in demo mode. */
 export function assertNotFabricatingInProd(context: string): void {
   if (!FeatureFlags.demoMode) {
-    throw new Error(
+    throw new ForbiddenException(
       `Fabricated/mock data requested in "${context}" but DEMO_MODE is off. ` +
         `This path must not run in production (constitution: Truthful Data).`,
     );

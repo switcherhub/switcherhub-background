@@ -1,3 +1,5 @@
+import { IsIn, IsObject, IsOptional, IsString } from 'class-validator';
+
 export type CommutePrecision = 'zip' | 'exact';
 export type TransportMode = 'car' | 'transit' | 'walk' | 'bike';
 
@@ -19,9 +21,18 @@ export interface CommuteLocationInput {
 
 /** Request body for POST /commute/estimate (pre-auth). */
 export class CommuteEstimateDto {
+  @IsObject()
   workLocation: CommuteLocationInput;
+
+  @IsObject()
   homeArea: CommuteLocationInput;
+
+  @IsString()
+  @IsIn(['car', 'transit', 'walk', 'bike'])
   transport: TransportMode;
+
+  @IsOptional()
+  @IsString()
   departure?: string; // ISO-8601, optional
 }
 
