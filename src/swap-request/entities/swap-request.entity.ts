@@ -11,6 +11,7 @@ import {
 import { SwapRequestInterface } from '../types/swap-request.interface';
 import { SwapComparisonInterface } from '../types/swap-comparison.interface';
 import { SwapStatusEnum } from '../types/swap-status.enum';
+import { HrDecisionEnum } from '../types/hr-decision.enum';
 import { CancelledByTypeEnum } from '../types/cancelled-by-type.enum';
 import { ResumeEntity } from 'src/resume/entities/resume.entity';
 import { UserEntity } from 'src/users/entities/user.entity';
@@ -32,6 +33,27 @@ export class SwapRequestEntity implements SwapRequestInterface {
    */
   @Column({ type: 'int', default: 1 })
   proposalVersion: number;
+
+  // ── Explicit HR decisions (spec §5 S10), separate from payment. Gated reveal.
+  @Column({
+    type: 'enum',
+    enum: HrDecisionEnum,
+    default: HrDecisionEnum.PENDING,
+  })
+  hrADecision: HrDecisionEnum;
+
+  @Column({
+    type: 'enum',
+    enum: HrDecisionEnum,
+    default: HrDecisionEnum.PENDING,
+  })
+  hrBDecision: HrDecisionEnum;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  hrADecidedAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  hrBDecidedAt: Date | null;
 
   @ManyToOne(() => ResumeEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'resumeAId' })

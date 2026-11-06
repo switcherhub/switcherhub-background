@@ -33,6 +33,7 @@ import { SwapRequestStatusType } from '../dto/swap-request-response.dto';
 import { DashboardStatisticsDto } from '../dto/dashboard-statistics.dto';
 import { DashboardStatisticsByManagerDto } from '../dto/dashboard-statistics-by-manager.dto';
 import { ConsentService } from 'src/consent/consent.service';
+import { HrDecisionEnum } from '../types/hr-decision.enum';
 
 type SwapRequestListItem = SwapRequestEntity & {
   tab: SwapRequestStatusType;
@@ -88,6 +89,33 @@ export class SwapRequestController {
   @UseGuards(JwtUserAuthGuard)
   async consentStatus(@Param('id') id: string) {
     return this.consentService.status(id);
+  }
+
+  // ── Explicit HR decisions, separate from payment (spec §5 S10) ──
+  @Post(':id/hr-decision')
+  @UseGuards(JwtUserAuthGuard)
+  async hrDecision(
+    @Param('id') id: string,
+    @GetUser() user: UserEntity,
+    @Body('decision') decision: string,
+  ) {
+    const allowed = ['approved', 'declined', 'needs_clarification'];
+    if (!allowed.includes(decision)) {
+      throw new BadRequestException(
+        `decision must be one of ${allowed.join(', ')}`,
+      );
+    }
+    return this.swapRequestService.recordHrDecision(
+      id,
+      user.id,
+      decision as HrDecisionEnum,
+    );
+  }
+
+  @Get(':id/hr-progress')
+  @UseGuards(JwtUserAuthGuard)
+  async hrProgress(@Param('id') id: string, @GetUser() user: UserEntity) {
+    return this.swapRequestService.getHrProgress(id, user.id);
   }
 
   @Get()

@@ -30,6 +30,7 @@ import { FilterResponseInterface } from 'src/utils/filter-response.interface';
 import { WorkspacePaymentMethodService } from 'src/workspace/services/workspace-payment-method.service';
 import { ConsentService } from 'src/consent/consent.service';
 import { FeatureFlags } from 'src/app/feature-flags';
+import { HrDecisionEnum } from '../types/hr-decision.enum';
 import { WorkspaceService } from 'src/workspace/services/workspace.service';
 import { OrganizationRoleEnum } from 'src/workspace/types/organization-role.enum';
 import { ForbiddenException } from '@nestjs/common';
@@ -578,6 +579,16 @@ export class SwapRequestService {
     exposeParticipantSide?: 'A' | 'B',
   ): T {
     if (bothSidesPaid) return item;
+    // Reveal on two explicit HR approvals (spec §5 S11) when the flag is on —
+    // decoupled from payment. No effect on objects lacking HR-decision fields.
+    if (
+      FeatureFlags.hrDecisionEnabled &&
+      (item as Record<string, unknown>).hrADecision ===
+        HrDecisionEnum.APPROVED &&
+      (item as Record<string, unknown>).hrBDecision === HrDecisionEnum.APPROVED
+    ) {
+      return item;
+    }
     const result: Record<string, unknown> = { ...item };
     if (exposeParticipantSide !== 'A') {
       result.participantAFullName = null;
@@ -1468,6 +1479,66 @@ export class SwapRequestService {
    * Запрошення ейчара: або по email (відправляється лист), або тільки по коду (повертається code + joinUrl для шарингу).
    * Email не обов'язковий.
    */
+  /** True when BOTH HR managers explicitly approved (spec §5 S10/S11). */
+  bothHrApproved(swap: SwapRequestEntity): boolean {
+    return (
+      swap.hrADecision === HrDecisionEnum.APPROVED &&
+      swap.hrBDecision === HrDecisionEnum.APPROVED
+    );
+  }
+
+  /** Record an HR's explicit decision — only the manager of that side. */
+  async recordHrDecision(
+    id: string,
+    userId: string,
+    decision: HrDecisionEnum,
+  ) {
+    const swap = await this.swapRequestRepository.findOne({
+      where: { id },
+      relations: ['resumeA', 'resumeB', 'managerA', 'managerB'],
+    });
+    if (!swap) throw new NotFoundException('Swap request not found');
+    const isA = swap.managerAId === userId;
+    const isB = swap.managerBId === userId;
+    if (!isA && !isB) {
+      throw new ForbiddenException("Only this swap's HR managers can decide.");
+    }
+    const now = new Date();
+    if (isA) {
+      swap.hrADecision = decision;
+      swap.hrADecidedAt = now;
+    } else {
+      swap.hrBDecision = decision;
+      swap.hrBDecidedAt = now;
+    }
+    await this.swapRequestRepository.save(swap);
+    return this.getHrProgress(id, userId);
+  }
+
+  /** Worker-facing HR progress for the S10 screen (spec §5 S10). */
+  async getHrProgress(id: string, userId: string) {
+    const swap = await this.swapRequestRepository.findOne({
+      where: { id },
+      relations: ['resumeA', 'resumeB'],
+    });
+    if (!swap) throw new NotFoundException('Swap request not found');
+    const isSwitcherA = swap.resumeA?.userId === userId;
+    const yourHr = isSwitcherA ? swap.hrADecision : swap.hrBDecision;
+    const partnerHr = isSwitcherA ? swap.hrBDecision : swap.hrADecision;
+    const declined =
+      swap.hrADecision === HrDecisionEnum.DECLINED ||
+      swap.hrBDecision === HrDecisionEnum.DECLINED;
+    const stage =
+      swap.status === SwapStatusEnum.COMPLETED
+        ? 'completed'
+        : this.bothHrApproved(swap)
+          ? 'both_approved'
+          : declined
+            ? 'closed'
+            : 'awaiting_hr';
+    return { yourHr, partnerHr, stage };
+  }
+
   async inviteHr(
     id: string,
     inviteDto: HrInviteDto,

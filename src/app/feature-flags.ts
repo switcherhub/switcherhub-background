@@ -55,6 +55,15 @@ export const FeatureFlags = {
   get matchingV2Enabled(): boolean {
     return parseBool(process.env.MATCHING_V2_ENABLED, false);
   },
+
+  /**
+   * When true, HR approval is an explicit decision (approve/decline/clarify),
+   * separate from payment, and contact reveal is gated on TWO approvals (not two
+   * payments). Default off until the flow is validated; legacy payment path stays.
+   */
+  get hrDecisionEnabled(): boolean {
+    return parseBool(process.env.HR_DECISION_ENABLED, false);
+  },
 } as const;
 
 /** Convenience guard used on hot paths to block fabrication when not in demo mode. */
