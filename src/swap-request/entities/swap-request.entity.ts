@@ -55,6 +55,13 @@ export class SwapRequestEntity implements SwapRequestInterface {
   @Column({ type: 'timestamptz', nullable: true })
   hrBDecidedAt: Date | null;
 
+  // Optional HR note for a decline / clarification request (HR-facing only).
+  @Column({ type: 'text', nullable: true })
+  hrAReason: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  hrBReason: string | null;
+
   @ManyToOne(() => ResumeEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'resumeAId' })
   resumeA: ResumeEntity;

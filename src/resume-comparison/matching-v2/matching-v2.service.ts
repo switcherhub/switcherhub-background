@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ResumeEntity } from 'src/resume/entities/resume.entity';
+import { SwapRequestEntity } from 'src/swap-request/entities/swap-request.entity';
 import { RoutingMatrixService } from 'src/routing-matrix/services/routing-matrix.service';
 import { Coordinate } from 'src/routing-matrix/types/routing.types';
 import { MatchSide, evaluateMatch, minDailySavings } from './matching.logic';
@@ -46,8 +47,42 @@ export class MatchingV2Service {
   constructor(
     @InjectRepository(ResumeEntity)
     private readonly resumeRepo: Repository<ResumeEntity>,
+    @InjectRepository(SwapRequestEntity)
+    private readonly swapRepo: Repository<SwapRequestEntity>,
     private readonly routing: RoutingMatrixService,
   ) {}
+
+  /**
+   * Create (or reuse) a swap request between the user's active resume and a
+   * matched candidate — the "I'm interested" step (spec §5 S07→S08). Returns the
+   * swapId + proposalVersion so the app can authorize the employer contact.
+   */
+  async proposeSwap(
+    userId: string,
+    candidateResumeId: string,
+  ): Promise<{ swapId: string; proposalVersion: number }> {
+    const mine = await this.resumeRepo.findOne({
+      where: { userId, isHidden: false },
+      order: { createdAt: 'DESC' },
+    });
+    if (!mine) throw new NotFoundException('No active resume for this user.');
+    const candidate = await this.resumeRepo.findOne({
+      where: { id: candidateResumeId },
+    });
+    if (!candidate) throw new NotFoundException('Candidate resume not found.');
+    if (candidate.userId === userId) {
+      throw new NotFoundException('Cannot propose a swap with yourself.');
+    }
+    let swap = await this.swapRepo.findOne({
+      where: { resumeAId: mine.id, resumeBId: candidate.id },
+    });
+    if (!swap) {
+      swap = await this.swapRepo.save(
+        this.swapRepo.create({ resumeAId: mine.id, resumeBId: candidate.id }),
+      );
+    }
+    return { swapId: swap.id, proposalVersion: swap.proposalVersion };
+  }
 
   private coord(p?: Pt | null): Coordinate | null {
     if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {

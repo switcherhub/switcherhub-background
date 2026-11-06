@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -56,5 +57,18 @@ export class MatchingV2Controller {
       throw new ForbiddenException('MATCHING_V2_ENABLED is off.');
     }
     return this.matching.findMatchesForUser(user.id);
+  }
+
+  /** "I'm interested": create/reuse a swap with a candidate (S07→S08). */
+  @Post(':candidateResumeId/propose')
+  @UseGuards(JwtUserAuthGuard)
+  async propose(
+    @Param('candidateResumeId') candidateResumeId: string,
+    @GetUser() user: UserEntity,
+  ): Promise<{ swapId: string; proposalVersion: number }> {
+    if (!FeatureFlags.matchingV2Enabled) {
+      throw new ForbiddenException('MATCHING_V2_ENABLED is off.');
+    }
+    return this.matching.proposeSwap(user.id, candidateResumeId);
   }
 }

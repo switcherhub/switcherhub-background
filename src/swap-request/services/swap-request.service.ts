@@ -1492,6 +1492,7 @@ export class SwapRequestService {
     id: string,
     userId: string,
     decision: HrDecisionEnum,
+    reason?: string | null,
   ) {
     const swap = await this.swapRequestRepository.findOne({
       where: { id },
@@ -1504,12 +1505,21 @@ export class SwapRequestService {
       throw new ForbiddenException("Only this swap's HR managers can decide.");
     }
     const now = new Date();
+    // Keep a note only for a decline / clarification request; clear it on approve.
+    const note =
+      decision === HrDecisionEnum.APPROVED
+        ? null
+        : reason?.trim()
+          ? reason.trim().slice(0, 1000)
+          : null;
     if (isA) {
       swap.hrADecision = decision;
       swap.hrADecidedAt = now;
+      swap.hrAReason = note;
     } else {
       swap.hrBDecision = decision;
       swap.hrBDecidedAt = now;
+      swap.hrBReason = note;
     }
     await this.swapRequestRepository.save(swap);
     return this.getHrProgress(id, userId);
@@ -1522,9 +1532,12 @@ export class SwapRequestService {
       relations: ['resumeA', 'resumeB'],
     });
     if (!swap) throw new NotFoundException('Swap request not found');
-    const isSwitcherA = swap.resumeA?.userId === userId;
-    const yourHr = isSwitcherA ? swap.hrADecision : swap.hrBDecision;
-    const partnerHr = isSwitcherA ? swap.hrBDecision : swap.hrADecision;
+    // Resolve the caller's side as either the switcher (worker) or the HR manager.
+    const isSideA =
+      swap.resumeA?.userId === userId || swap.managerAId === userId;
+    const yourHr = isSideA ? swap.hrADecision : swap.hrBDecision;
+    const partnerHr = isSideA ? swap.hrBDecision : swap.hrADecision;
+    const yourReason = isSideA ? swap.hrAReason : swap.hrBReason;
     const declined =
       swap.hrADecision === HrDecisionEnum.DECLINED ||
       swap.hrBDecision === HrDecisionEnum.DECLINED;
@@ -1536,7 +1549,7 @@ export class SwapRequestService {
           : declined
             ? 'closed'
             : 'awaiting_hr';
-    return { yourHr, partnerHr, stage };
+    return { yourHr, partnerHr, stage, yourReason: yourReason ?? null };
   }
 
   async inviteHr(

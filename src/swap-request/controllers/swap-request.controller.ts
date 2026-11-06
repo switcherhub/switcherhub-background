@@ -98,6 +98,7 @@ export class SwapRequestController {
     @Param('id') id: string,
     @GetUser() user: UserEntity,
     @Body('decision') decision: string,
+    @Body('reason') reason?: string,
   ) {
     const allowed = ['approved', 'declined', 'needs_clarification'];
     if (!allowed.includes(decision)) {
@@ -109,6 +110,7 @@ export class SwapRequestController {
       id,
       user.id,
       decision as HrDecisionEnum,
+      reason,
     );
   }
 
