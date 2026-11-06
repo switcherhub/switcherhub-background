@@ -224,6 +224,16 @@ export class MatchingV2Service {
     };
   }
 
+  /** Matches for the authenticated user's active resume (/me/matches). */
+  async findMatchesForUser(userId: string, limit = 10): Promise<MatchCard[]> {
+    const resume = await this.resumeRepo.findOne({
+      where: { userId, isHidden: false },
+      order: { createdAt: 'DESC' },
+    });
+    if (!resume) return [];
+    return this.findMatchesFor(resume.id, limit);
+  }
+
   async evaluatePair(aId: string, bId: string): Promise<PairEvaluation> {
     const relations = ['jobType', 'shiftType', 'licenseRequired'];
     const a = await this.resumeRepo.findOne({ where: { id: aId }, relations });

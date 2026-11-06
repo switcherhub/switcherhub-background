@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   MatchCard,
@@ -11,6 +12,9 @@ import {
   PairEvaluation,
 } from './matching-v2.service';
 import { FeatureFlags } from 'src/app/feature-flags';
+import { JwtUserAuthGuard } from 'src/user-auth/guards/jwt-user-auth.guard';
+import { GetUser } from 'src/user-auth/decorators/get-user.decorator';
+import { UserEntity } from 'src/users/entities/user.entity';
 
 /**
  * Verified-matching v2 (spec 002). Flag-gated by MATCHING_V2_ENABLED.
@@ -42,5 +46,15 @@ export class MatchingV2Controller {
       throw new ForbiddenException('MATCHING_V2_ENABLED is off.');
     }
     return this.matching.findMatchesFor(resumeId);
+  }
+
+  /** Matches for the authenticated user (powers S06/S07 in the app): GET /matches/mine */
+  @Get('mine')
+  @UseGuards(JwtUserAuthGuard)
+  async myMatches(@GetUser() user: UserEntity): Promise<MatchCard[]> {
+    if (!FeatureFlags.matchingV2Enabled) {
+      throw new ForbiddenException('MATCHING_V2_ENABLED is off.');
+    }
+    return this.matching.findMatchesForUser(user.id);
   }
 }
