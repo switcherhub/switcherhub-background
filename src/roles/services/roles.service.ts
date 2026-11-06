@@ -4,7 +4,11 @@ import { Repository } from 'typeorm';
 import { RoleEntity } from '../entities/role.entity';
 import { RoleCategoryEntity } from '../entities/role-category.entity';
 import { ROLE_CATEGORIES, ROLES } from '../data/taxonomy.seed';
-import { RoleSupportStatusEnum } from '../types/role-support-status.enum';
+import {
+  RoleSupportStatusEnum,
+  TAXONOMY_VERSION,
+} from '../types/role-support-status.enum';
+import { ResumeEntity } from 'src/resume/entities/resume.entity';
 
 export interface RoleSearchResult {
   roleId: string;
@@ -29,7 +33,80 @@ export class RolesService implements OnModuleInit {
     private readonly roleRepo: Repository<RoleEntity>,
     @InjectRepository(RoleCategoryEntity)
     private readonly categoryRepo: Repository<RoleCategoryEntity>,
+    @InjectRepository(ResumeEntity)
+    private readonly resumeRepo: Repository<ResumeEntity>,
   ) {}
+
+  /**
+   * Migrate existing resumes to the new taxonomy (spec §13). Unambiguous legacy
+   * titles map automatically; ambiguous/unknown are marked `rolePendingReview`.
+   * Dry-run reports counts without writing. Idempotent (skips already-set roleKey).
+   */
+  async migrateResumeTaxonomy(dryRun = true): Promise<{
+    dryRun: boolean;
+    total: number;
+    alreadySet: number;
+    mapped: number;
+    pending: number;
+    taxonomyVersion: string;
+    unresolvedSamples: string[];
+  }> {
+    const resumes = await this.resumeRepo.find({ relations: ['jobCore'] });
+    let alreadySet = 0;
+    let mapped = 0;
+    let pending = 0;
+    const unresolvedSamples: string[] = [];
+
+    for (const r of resumes) {
+      if (r.roleKey) {
+        alreadySet++;
+        continue;
+      }
+      const title = (r.jobCore as { title?: string } | null)?.title ?? '';
+      const role = await this.resolveRoleByTitle(title);
+      if (role) {
+        mapped++;
+        if (!dryRun) {
+          r.roleKey = role.key;
+          r.categoryKey = role.categoryKey;
+          r.taxonomyVersion = TAXONOMY_VERSION;
+          r.rolePendingReview = false;
+          await this.resumeRepo.save(r);
+        }
+      } else {
+        pending++;
+        if (title && unresolvedSamples.length < 10) {
+          unresolvedSamples.push(title);
+        }
+        if (!dryRun) {
+          r.rolePendingReview = true;
+          r.taxonomyVersion = TAXONOMY_VERSION;
+          await this.resumeRepo.save(r);
+        }
+      }
+    }
+
+    return {
+      dryRun,
+      total: resumes.length,
+      alreadySet,
+      mapped,
+      pending,
+      taxonomyVersion: TAXONOMY_VERSION,
+      unresolvedSamples,
+    };
+  }
+
+  /** Map a legacy job title to a single role (exact title or alias). Else null (ambiguous). */
+  private async resolveRoleByTitle(title: string): Promise<RoleEntity | null> {
+    const q = normalize(title);
+    if (!q) return null;
+    const all = await this.roleRepo.find({ where: { isHidden: false } });
+    const exact = all.filter(
+      (r) => normalize(r.titleEn) === q || (r.aliases ?? []).includes(q),
+    );
+    return exact.length === 1 ? exact[0] : null;
+  }
 
   /** Idempotently seed canonical categories/roles. Safe to run every boot (upsert by key). */
   async onModuleInit(): Promise<void> {
