@@ -27,6 +27,7 @@ import { UserResumeList } from 'src/users/interfaces/user-resume-list.type';
 import { OptionalJwtUserAuthGuard } from 'src/user-auth/guards/optional-jwt-user-auth.guard';
 import { ResumeMockService } from '../services/resume-mock.service';
 import { assertNotFabricatingInProd } from '../../app/feature-flags';
+import { ResumeSwapTermsDto } from '../dto/resume-swap-terms.dto';
 
 @Controller('resume')
 export class ResumeController {
@@ -185,6 +186,16 @@ export class ResumeController {
     return this.resumeUserService.createByUser(mockResume, user.id);
   }
 
+  /** Save swap-terms on the authenticated user's active resume (no id needed). */
+  @Patch('me/swap-terms')
+  @UseGuards(JwtUserAuthGuard)
+  async updateMySwapTerms(
+    @Body() terms: ResumeSwapTermsDto,
+    @GetUser() user: UserEntity,
+  ) {
+    return this.resumeUserService.updateMySwapTerms(user.id, terms);
+  }
+
   @Put(':id/visible')
   @UseGuards(JwtUserAuthGuard)
   async setVisible(
@@ -211,6 +222,17 @@ export class ResumeController {
     @GetUser() user: UserEntity,
   ) {
     return this.resumeUserService.updateByUser(id, data, user.id);
+  }
+
+  /** Save swap-terms (minimum pay/hours/availability) — spec §5 S05. */
+  @Patch(':id/swap-terms')
+  @UseGuards(JwtUserAuthGuard)
+  async updateSwapTerms(
+    @Param('id') id: string,
+    @Body() terms: ResumeSwapTermsDto,
+    @GetUser() user: UserEntity,
+  ) {
+    return this.resumeUserService.updateSwapTerms(id, user.id, terms);
   }
 
   @Delete(':id')

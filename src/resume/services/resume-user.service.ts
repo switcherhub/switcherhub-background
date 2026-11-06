@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -55,6 +56,53 @@ export class ResumeUserService extends ParameterBaseService<ResumeEntity> {
     // }
 
     return this.resumeService.updateOne(id, data);
+  }
+
+  /** Save swap-terms (minimums/availability) on the user's own resume (spec §5 S05). */
+  async updateSwapTerms(
+    id: string,
+    userId: string,
+    terms: {
+      minRate?: number | null;
+      minHours?: number | null;
+      availabilityShifts?: string[];
+      allowJobTypeChange?: boolean;
+    },
+  ): Promise<ResumeEntity> {
+    await this.userService.findOneOrFail(userId);
+    await this.resumeService.findOneOrFail(id, userId); // ownership check
+    const patch: Record<string, unknown> = {};
+    if ('minRate' in terms) patch.minRate = terms.minRate ?? null;
+    if ('minHours' in terms) patch.minHours = terms.minHours ?? null;
+    if ('availabilityShifts' in terms) {
+      patch.availabilityShifts = (terms.availabilityShifts ?? []).map((s) =>
+        s.toLowerCase(),
+      );
+    }
+    if ('allowJobTypeChange' in terms) {
+      patch.allowJobTypeChange = !!terms.allowJobTypeChange;
+    }
+    return this.resumeService.updateOne(id, patch as unknown as ResumeUpdateDto);
+  }
+
+  /** Save swap-terms on the user's active (most recent, visible) resume. */
+  async updateMySwapTerms(
+    userId: string,
+    terms: {
+      minRate?: number | null;
+      minHours?: number | null;
+      availabilityShifts?: string[];
+      allowJobTypeChange?: boolean;
+    },
+  ): Promise<ResumeEntity> {
+    const resume = await this.repository.findOne({
+      where: { userId, isHidden: false },
+      order: { createdAt: 'DESC' },
+    });
+    if (!resume) {
+      throw new NotFoundException('No active resume to update.');
+    }
+    return this.updateSwapTerms(resume.id, userId, terms);
   }
 
   async createByUser(
