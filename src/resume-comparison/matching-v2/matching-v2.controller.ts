@@ -2,9 +2,14 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Param,
   Query,
 } from '@nestjs/common';
-import { MatchingV2Service, PairEvaluation } from './matching-v2.service';
+import {
+  MatchCard,
+  MatchingV2Service,
+  PairEvaluation,
+} from './matching-v2.service';
 import { FeatureFlags } from 'src/app/feature-flags';
 
 /**
@@ -26,5 +31,16 @@ export class MatchingV2Controller {
       throw new ForbiddenException('MATCHING_V2_ENABLED is off.');
     }
     return this.matching.evaluatePair(a, b);
+  }
+
+  /** Candidate matches for a resume (verified + preliminary), ready for S06/S07. */
+  @Get('for/:resumeId')
+  async forResume(
+    @Param('resumeId') resumeId: string,
+  ): Promise<MatchCard[]> {
+    if (!FeatureFlags.matchingV2Enabled) {
+      throw new ForbiddenException('MATCHING_V2_ENABLED is off.');
+    }
+    return this.matching.findMatchesFor(resumeId);
   }
 }

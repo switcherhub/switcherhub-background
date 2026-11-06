@@ -11,6 +11,18 @@ interface Pt {
   lng: number | null;
 }
 
+export interface MatchCard {
+  matchId: string;
+  roleTitle: string;
+  approxArea: string;
+  commuteNowMin: number | null;
+  commuteAfterMin: number | null;
+  verified: boolean;
+  status: 'verified' | 'preliminary';
+  minDailySavingsMin: number | null;
+  conditions: { label: string; value: string | null }[];
+}
+
 export interface PairEvaluation {
   verified: boolean;
   reasonCodes: string[];
@@ -102,6 +114,113 @@ export class MatchingV2Service {
       requiredSkills: this.requiresLicense(resume) ? ['license'] : [],
       currentCommuteMin,
       proposedCommuteMin,
+    };
+  }
+
+  /**
+   * Find candidate matches for a resume (spec §6.1 discovery). Same role, other
+   * users; each candidate is evaluated via the hard-rule engine + live routing.
+   * Returns verified and preliminary cards; clear hard failures are excluded.
+   * Bounded to `limit` candidates to cap routing calls.
+   */
+  async findMatchesFor(subjectId: string, limit = 10): Promise<MatchCard[]> {
+    const relations = ['jobType', 'shiftType', 'licenseRequired', 'jobCore'];
+    const subject = await this.resumeRepo.findOne({
+      where: { id: subjectId },
+      relations,
+    });
+    if (!subject) throw new NotFoundException('Resume not found.');
+
+    const roleKey = subject.roleKey ?? subject.jobCoreId ?? null;
+    if (!roleKey) return [];
+
+    // Candidates: same role, different user, visible. (Geo pre-filter omitted here;
+    // the routing + hard-rule savings check already excludes far/un-saving pairs.)
+    const all = await this.resumeRepo.find({
+      where: subject.roleKey
+        ? { roleKey: subject.roleKey, isHidden: false }
+        : { jobCoreId: subject.jobCoreId, isHidden: false },
+      relations,
+      take: 100,
+    });
+    const candidates = all
+      .filter((r) => r.id !== subject.id && r.userId !== subject.userId)
+      .slice(0, limit);
+
+    const cards: MatchCard[] = [];
+    for (const cand of candidates) {
+      const evaln = await this.evaluatePair(subject.id, cand.id);
+      // Exclude clear hard failures (role/same-workplace/no-savings). Keep verified
+      // and preliminary (unknowns) where the subject actually saves commute.
+      const hardFail = evaln.reasonCodes.some((c) =>
+        [
+          'role_incompatible',
+          'same_workplace',
+          'a.no_commute_savings',
+          'b.no_commute_savings',
+        ].includes(c),
+      );
+      if (hardFail) continue;
+      const subjSavings =
+        evaln.commutes.aCurrent != null && evaln.commutes.aProposed != null
+          ? evaln.commutes.aCurrent - evaln.commutes.aProposed
+          : null;
+      if (subjSavings == null || subjSavings <= 0) continue;
+
+      cards.push(this.toCard(subject, cand, evaln));
+    }
+
+    // Verified first, then by larger min daily savings.
+    cards.sort((x, y) => {
+      if (x.verified !== y.verified) return x.verified ? -1 : 1;
+      return (y.minDailySavingsMin ?? 0) - (x.minDailySavingsMin ?? 0);
+    });
+    return cards;
+  }
+
+  private toCard(
+    subject: ResumeEntity,
+    cand: ResumeEntity,
+    evaln: PairEvaluation,
+  ): MatchCard {
+    const candLoc = cand.location as { area?: string; city?: string; zipCode?: string } | null;
+    const approxArea =
+      cand.locationArea ||
+      cand.locationCity ||
+      candLoc?.area ||
+      candLoc?.city ||
+      candLoc?.zipCode ||
+      'Nearby area';
+    const roleTitle =
+      (cand.jobCore as { title?: string } | null)?.title ?? cand.roleKey ?? 'Role';
+    const u = evaln.unknowns;
+    const has = (k: string) => !u.includes(k);
+    const conditions = [
+      { label: 'Pay', value: has('a.pay') ? 'Meets your minimum' : null },
+      {
+        label: 'Job type',
+        value: has('a.job_type')
+          ? (cand.jobType as { title?: string } | null)?.title ?? null
+          : null,
+      },
+      {
+        label: 'Shift',
+        value: has('a.shift')
+          ? (cand.shiftType as { title?: string } | null)?.title ?? null
+          : null,
+      },
+      { label: 'Hours per week', value: has('a.hours') ? 'Meets your minimum' : null },
+    ];
+    return {
+      matchId: cand.id,
+      roleTitle,
+      approxArea,
+      commuteNowMin: evaln.commutes.aCurrent,
+      commuteAfterMin: evaln.commutes.aProposed,
+      verified: evaln.verified,
+      status: evaln.verified ? 'verified' : 'preliminary',
+      minDailySavingsMin: evaln.minDailySavingsMin,
+      conditions,
     };
   }
 
