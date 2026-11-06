@@ -32,6 +32,7 @@ import { SwapRequestEntity } from '../entities/swap-request.entity';
 import { SwapRequestStatusType } from '../dto/swap-request-response.dto';
 import { DashboardStatisticsDto } from '../dto/dashboard-statistics.dto';
 import { DashboardStatisticsByManagerDto } from '../dto/dashboard-statistics-by-manager.dto';
+import { ConsentService } from 'src/consent/consent.service';
 
 type SwapRequestListItem = SwapRequestEntity & {
   tab: SwapRequestStatusType;
@@ -43,6 +44,7 @@ export class SwapRequestController {
   constructor(
     private readonly swapRequestService: SwapRequestService,
     private readonly chatService: ChatService,
+    private readonly consentService: ConsentService,
   ) {}
 
   @Post()
@@ -53,6 +55,39 @@ export class SwapRequestController {
     @GetUser() user: UserEntity,
   ) {
     return this.swapRequestService.create(createDto, user.id);
+  }
+
+  // ── Two-sided consent before employer contact (spec §8.3, FR-015/016) ──
+  @Post(':id/authorize')
+  @UseGuards(JwtUserAuthGuard)
+  async authorize(
+    @Param('id') id: string,
+    @GetUser() user: UserEntity,
+    @Body('proposalVersion') proposalVersion: number,
+    @Body('recipientId') recipientId?: string,
+  ) {
+    return this.consentService.authorize({
+      swapId: id,
+      actorId: user.id,
+      proposalVersion: Number(proposalVersion),
+      recipientId: recipientId ?? null,
+    });
+  }
+
+  @Post(':id/withdraw')
+  @UseGuards(JwtUserAuthGuard)
+  async withdrawConsent(
+    @Param('id') id: string,
+    @GetUser() user: UserEntity,
+    @Body('proposalVersion') proposalVersion: number,
+  ) {
+    return this.consentService.withdraw(id, user.id, Number(proposalVersion));
+  }
+
+  @Get(':id/consent-status')
+  @UseGuards(JwtUserAuthGuard)
+  async consentStatus(@Param('id') id: string) {
+    return this.consentService.status(id);
   }
 
   @Get()

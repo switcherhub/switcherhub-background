@@ -28,6 +28,8 @@ import { ChatService } from 'src/chat/services/chat.service';
 import { IFilterQuery } from 'typeorm-dynamic-filters';
 import { FilterResponseInterface } from 'src/utils/filter-response.interface';
 import { WorkspacePaymentMethodService } from 'src/workspace/services/workspace-payment-method.service';
+import { ConsentService } from 'src/consent/consent.service';
+import { FeatureFlags } from 'src/app/feature-flags';
 import { WorkspaceService } from 'src/workspace/services/workspace.service';
 import { OrganizationRoleEnum } from 'src/workspace/types/organization-role.enum';
 import { ForbiddenException } from '@nestjs/common';
@@ -70,6 +72,7 @@ export class SwapRequestService {
     private workspacePaymentMethodService: WorkspacePaymentMethodService,
     @Inject(forwardRef(() => WorkspaceService))
     private workspaceService: WorkspaceService,
+    private consentService: ConsentService,
   ) {
     const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (stripeSecretKey) {
@@ -1503,6 +1506,17 @@ export class SwapRequestService {
     }
 
     const side = isSideA ? 'A' : 'B';
+
+    // Consent gate (spec FR-015/016): when enabled, no employer is contacted until
+    // BOTH workers have authorized the current proposal version. Fail-closed.
+    if (FeatureFlags.consentGateEnabled) {
+      const bothAuthorized = await this.consentService.isBothAuthorized(id);
+      if (!bothAuthorized) {
+        throw new ForbiddenException(
+          'Both workers must authorize before an employer can be contacted.',
+        );
+      }
+    }
 
     /** Same normalization as user-auth login — DB emails are stored lowercased. */
     const normalizedInviteEmail = inviteDto.email

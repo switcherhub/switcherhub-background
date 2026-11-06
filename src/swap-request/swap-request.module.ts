@@ -12,11 +12,13 @@ import { WorkspaceModule } from 'src/workspace/workspace.module';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { ResumeComparisonModule } from 'src/resume-comparison/resume-comparison.module';
 import { NotificationModule } from 'src/notification/notification.module';
+import { ConsentModule } from 'src/consent/consent.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SwapRequestEntity, UserEntity]),
     ConfigModule,
+    ConsentModule,
     ResumeModule,
     forwardRef(() => UsersModule),
     MailModule,
