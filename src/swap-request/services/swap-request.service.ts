@@ -2310,7 +2310,9 @@ export class SwapRequestService {
 
     // Перевіряємо роль користувача (HR, Admin, або Owner)
     await this.checkUserRoleForSwapRequest(swapRequest, userId, side);
-    const amount = Number(this.configService.get('SWAP_PAYMENT_AMOUNT', 5000)) || 5000; // cents
+    // $149.00 per employer (matches the user-facing fee); override via SWAP_PAYMENT_AMOUNT (cents).
+    const amount =
+      Number(this.configService.get('SWAP_PAYMENT_AMOUNT', 14900)) || 14900; // cents
 
     let paymentIntentId: string;
     let clientSecret: string;

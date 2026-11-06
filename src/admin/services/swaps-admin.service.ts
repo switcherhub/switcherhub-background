@@ -794,11 +794,11 @@ export class SwapsAdminService {
   }
 
   private getStandardAmountCents(): number {
-    return this.parseAmountCents('SWAP_PAYMENT_AMOUNT', 5000);
+    return this.parseAmountCents('SWAP_PAYMENT_AMOUNT', 14900);
   }
 
   private getPartnerAmountCents(): number {
-    return this.parseAmountCents('SWAP_PARTNER_PAYMENT_AMOUNT', 5000);
+    return this.parseAmountCents('SWAP_PARTNER_PAYMENT_AMOUNT', 14900);
   }
 
   private parseAmountCents(key: string, fallback: number): number {

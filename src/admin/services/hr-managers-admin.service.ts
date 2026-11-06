@@ -578,8 +578,8 @@ export class HrManagersAdminService {
   }
 
   private getPaymentAmountCents(): number {
-    const value = Number(this.configService.get('SWAP_PAYMENT_AMOUNT', 5000));
-    return Number.isFinite(value) && value > 0 ? value : 5000;
+    const value = Number(this.configService.get('SWAP_PAYMENT_AMOUNT', 14900));
+    return Number.isFinite(value) && value > 0 ? value : 14900;
   }
 
   private async buildSwapStatsMap(): Promise<Map<MemberKey, MemberSwapStats>> {
